@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 sm:p-6 lg:p-8">
+
+    <div class="container mx-auto bg-white shadow-lg rounded-xl p-6 sm:p-8 lg:p-10 max-w-4xl w-full">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center text-gray-800 mb-8">Expense Tracker & Budget Planner</h1>
+
+        <!-- Expense Input Form -->
+        <div class="mb-8 p-6 bg-gray-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Add New Expense</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label for="expenseName" class="block text-sm font-medium text-gray-700 mb-1">Expense Name:</label>
+                    <input type="text" id="expenseName" placeholder="e.g., Groceries" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="expenseAmount" class="block text-sm font-medium text-gray-700 mb-1">Amount:</label>
+                    <input type="number" id="expenseAmount" placeholder="e.g., 50.00" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="expenseCategory" class="block text-sm font-medium text-gray-700 mb-1">Category:</label>
+                    <select id="expenseCategory" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="">Select Category</option>
+                        <option value="Food">Food</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Rent">Rent</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <button id="addExpenseBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+                Add Expense
+            </button>
+            <!-- Message box for user feedback -->
+            <div id="messageBox" class="mt-4 p-3 rounded-md text-sm hidden"></div>
+        </div>
+
+        <!-- Budget Setup and Summary Section -->
+        <div class="mb-8 p-6 bg-gray-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Budget Overview</h2>
+            <div class="mb-4">
+                <label for="budgetAmountInput" class="block text-sm font-medium text-gray-700 mb-1">Set Your Budget:</label>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input type="number" id="budgetAmountInput" placeholder="e.g., 1000.00" class="flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <button id="setBudgetBtn" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+                        Set Budget
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mt-6">
+                <div class="p-4 bg-white rounded-lg shadow-md">
+                    <p class="text-gray-600 text-sm">Set Budget:</p>
+                    <p id="setBudgetDisplay" class="text-xl font-bold text-blue-700">$0.00</p>
+                </div>
+                <div class="p-4 bg-white rounded-lg shadow-md">
+                    <p class="text-gray-600 text-sm">Total Expenses:</p>
+                    <p id="totalExpensesDisplay" class="text-xl font-bold text-red-700">$0.00</p>
+                </div>
+                <div class="p-4 bg-white rounded-lg shadow-md">
+                    <p class="text-gray-600 text-sm">Remaining Budget:</p>
+                    <p id="remainingBudgetDisplay" class="text-xl font-bold text-gray-800">$0.00</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expense Report Section -->
+        <div class="mb-8 p-6 bg-gray-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Expense Report</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 shadow-md rounded-lg overflow-hidden">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Name
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Amount
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Category
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenseList" class="bg-white divide-y divide-gray-200">
+                        <!-- Expense rows will be inserted here -->
+                    </tbody>
+                    <tfoot class="bg-gray-100">
+                        <tr>
+                            <th colspan="1" class="px-6 py-3 text-left text-base font-medium text-gray-700">Total:</th>
+                            <td colspan="4" class="px-6 py-3 text-right text-base font-bold text-gray-800">
+                                <span id="totalExpensesTableFooter">0.00</span>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Expense Chart Section -->
+        <div class="mb-8 p-6 bg-gray-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Expenses by Category (Pie Chart)</h2>
+            <div class="relative h-64 md:h-80 lg:h-96">
+                <canvas id="expenseChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Budget Overview Chart Section -->
+        <div class="p-6 bg-gray-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Budget vs. Expenses (Bar Chart)</h2>
+            <div class="relative h-64 md:h-80 lg:h-96">
+                <canvas id="budgetChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables for expenses, budget, and chart instances
+        let expenses = [];
+        let budget = 0;
+        let expenseChart; // Pie chart for categories
+        let budgetOverviewChart; // Bar chart for budget vs expenses
+
+        const MESSAGE_DURATION = 3000; // Duration for message box to be visible (3 seconds)
+
+        // DOM Element references
+        const expenseNameInput = document.getElementById('expenseName');
+        const expenseAmountInput = document.getElementById('expenseAmount');
+        const expenseCategorySelect = document.getElementById('expenseCategory');
+        const addExpenseBtn = document.getElementById('addExpenseBtn');
+        const expenseListTableBody = document.getElementById('expenseList');
+        const totalExpensesTableFooter = document.getElementById('totalExpensesTableFooter'); // For table footer
+        const messageBox = document.getElementById('messageBox');
+        const expenseChartCanvas = document.getElementById('expenseChart'); // Canvas for category pie chart
+
+        // Budget specific DOM references
+        const budgetAmountInput = document.getElementById('budgetAmountInput');
+        const setBudgetBtn = document.getElementById('setBudgetBtn');
+        const setBudgetDisplay = document.getElementById('setBudgetDisplay');
+        const totalExpensesDisplay = document.getElementById('totalExpensesDisplay'); // For budget summary
+        const remainingBudgetDisplay = document.getElementById('remainingBudgetDisplay');
+        const budgetChartCanvas = document.getElementById('budgetChart'); // Canvas for budget overview bar chart
+
+
+        // Function to display messages to the user
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.className = 'mt-4 p-3 rounded-md text-sm'; // Reset classes
+            if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'text-red-700', 'border', 'border-red-400');
+            } else if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'text-green-700', 'border', 'border-green-400');
+            } else { // info or default
+                messageBox.classList.add('bg-blue-100', 'text-blue-700', 'border', 'border-blue-400');
+            }
+            messageBox.classList.remove('hidden');
+
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, MESSAGE_DURATION);
+        }
+
+        // Function to load expenses and budget from Local Storage
+        function loadData() {
+            const storedExpenses = localStorage.getItem('expenses');
+            if (storedExpenses) {
+                expenses = JSON.parse(storedExpenses);
+            }
+            const storedBudget = localStorage.getItem('budget');
+            if (storedBudget) {
+                budget = parseFloat(storedBudget);
+            }
+        }
+
+        // Function to save expenses and budget to Local Storage
+        function saveData() {
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            localStorage.setItem('budget', budget.toString());
+        }
+
+        // Function to render the expense list table and calculate total expenses
+        function renderExpenseList() {
+            expenseListTableBody.innerHTML = ''; // Clear existing rows
+            let total = 0;
+
+            if (expenses.length === 0) {
+                expenseListTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                            No expenses added yet.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                expenses.forEach((expense, index) => {
+                    total += parseFloat(expense.amount);
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 transition-colors duration-200';
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${expense.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${parseFloat(expense.amount).toFixed(2)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${expense.category}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(expense.date).toLocaleDateString()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button data-index="${index}" class="delete-btn text-red-600 hover:text-red-900 transition-colors duration-200 rounded-md p-1 hover:bg-red-100">
+                                Delete
+                            </button>
+                        </td>
+                    `;
+                    expenseListTableBody.appendChild(row);
+                });
+            }
+
+            totalExpensesTableFooter.textContent = total.toFixed(2);
+            // Update total expenses display in the budget summary section
+            totalExpensesDisplay.textContent = `$${total.toFixed(2)}`;
+
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', handleDeleteExpense);
+            });
+            updateBudgetSummary(); // Call this after updating total expenses
+            updateBudgetOverviewChart(total); // Update budget chart with new total expenses
+        }
+
+        // Function to initialize or update the category pie chart
+        function updateCategoryChart() {
+            const categories = {};
+            expenses.forEach(expense => {
+                categories[expense.category] = (categories[expense.category] || 0) + parseFloat(expense.amount);
+            });
+
+            const chartLabels = Object.keys(categories);
+            const chartData = Object.values(categories);
+
+            // Generate consistent colors for categories
+            const backgroundColors = chartLabels.map((_, i) => {
+                const hue = (i * 137) % 360; // Use golden angle approximation for even distribution
+                return `hsl(${hue}, 70%, 70%)`;
+            });
+            const borderColors = chartLabels.map((_, i) => {
+                const hue = (i * 137) % 360;
+                return `hsl(${hue}, 70%, 50%)`;
+            });
+
+            if (expenseChart) {
+                // Update existing chart data
+                expenseChart.data.labels = chartLabels;
+                expenseChart.data.datasets[0].data = chartData;
+                expenseChart.data.datasets[0].backgroundColor = backgroundColors;
+                expenseChart.data.datasets[0].borderColor = borderColors;
+                expenseChart.update();
+            } else {
+                // Initialize new chart
+                expenseChart = new Chart(expenseChartCanvas, {
+                    type: 'pie', // Using a pie chart for category breakdown
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: 'Amount ($)',
+                            data: chartData,
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false, // Allows the chart to fill the container
+                        plugins: {
+                            legend: {
+                                position: 'right', // Place legend on the right
+                                labels: {
+                                    font: {
+                                        size: 14,
+                                        family: 'Inter',
+                                    },
+                                    color: '#333',
+                                },
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed !== null) {
+                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Function to update the budget summary display
+        function updateBudgetSummary() {
+            setBudgetDisplay.textContent = `$${budget.toFixed(2)}`;
+            const total = expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+            const remaining = budget - total;
+            remainingBudgetDisplay.textContent = `$${remaining.toFixed(2)}`;
+
+            // Change color based on remaining budget
+            if (remaining < 0) {
+                remainingBudgetDisplay.classList.remove('text-green-700', 'text-gray-800');
+                remainingBudgetDisplay.classList.add('text-red-700');
+            } else if (remaining >= 0 && budget > 0) {
+                remainingBudgetDisplay.classList.remove('text-red-700', 'text-gray-800');
+                remainingBudgetDisplay.classList.add('text-green-700');
+            } else {
+                remainingBudgetDisplay.classList.remove('text-red-700', 'text-green-700');
+                remainingBudgetDisplay.classList.add('text-gray-800');
+            }
+        }
+
+        // Function to set the budget
+        function handleSetBudget() {
+            const newBudget = parseFloat(budgetAmountInput.value);
+            if (isNaN(newBudget) || newBudget < 0) {
+                showMessage('Please enter a valid positive number for your budget.', 'error');
+                return;
+            }
+            budget = newBudget;
+            saveData();
+            updateBudgetSummary();
+            updateBudgetOverviewChart(expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0));
+            showMessage('Budget set successfully!', 'success');
+            budgetAmountInput.value = ''; // Clear input field
+        }
+
+        // Function to initialize or update the budget vs expenses bar chart
+        function updateBudgetOverviewChart(totalExpenses) {
+            const chartData = [budget, totalExpenses];
+            const chartLabels = ['Budget', 'Total Expenses'];
+            const barColors = ['#4CAF50', '#F44336']; // Green for budget, Red for expenses
+
+            if (budgetOverviewChart) {
+                // Update existing chart data
+                budgetOverviewChart.data.labels = chartLabels;
+                budgetOverviewChart.data.datasets[0].data = chartData;
+                budgetOverviewChart.data.datasets[0].backgroundColor = barColors;
+                budgetOverviewChart.update();
+            } else {
+                // Initialize new chart
+                budgetOverviewChart = new Chart(budgetChartCanvas, {
+                    type: 'bar', // Using a bar chart for comparison
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: 'Amount ($)',
+                            data: chartData,
+                            backgroundColor: barColors,
+                            borderColor: barColors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false // No legend needed for two bars
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Amount ($)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+
+        // Event handler for adding an expense
+        function handleAddExpense() {
+            const name = expenseNameInput.value.trim();
+            const amount = parseFloat(expenseAmountInput.value);
+            const category = expenseCategorySelect.value;
+
+            if (!name || isNaN(amount) || amount <= 0 || !category) {
+                showMessage('Please fill in all fields correctly (Amount must be a positive number).', 'error');
+                return;
+            }
+
+            const newExpense = {
+                id: Date.now(), // Unique ID for each expense
+                name: name,
+                amount: amount,
+                category: category,
+                date: new Date().toISOString() // Store date in ISO format
+            };
+
+            expenses.push(newExpense);
+            saveData(); // Save to local storage (expenses and budget)
+            renderExpenseList(); // Update table and trigger budget summary/chart updates
+            updateCategoryChart(); // Update category pie chart
+            showMessage('Expense added successfully!', 'success');
+
+            // Clear form fields
+            expenseNameInput.value = '';
+            expenseAmountInput.value = '';
+            expenseCategorySelect.value = '';
+        }
+
+        // Event handler for deleting an expense
+        function handleDeleteExpense(event) {
+            const indexToDelete = parseInt(event.target.dataset.index);
+            if (!isNaN(indexToDelete) && indexToDelete >= 0 && indexToDelete < expenses.length) {
+                expenses.splice(indexToDelete, 1); // Remove expense from array
+                saveData(); // Save updated array to local storage
+                renderExpenseList(); // Update table and trigger budget summary/chart updates
+                updateCategoryChart(); // Update category pie chart
+                showMessage('Expense deleted successfully!', 'info');
+            }
+        }
+
+        // Initialize the app when the window loads
+        window.onload = function() {
+            loadData(); // Load expenses and budget from local storage on startup
+            renderExpenseList(); // Render the initial list, and update budget summary/chart
+            updateCategoryChart(); // Render the initial category pie chart
+            updateBudgetSummary(); // Ensure budget summary is up-to-date on load
+            updateBudgetOverviewChart(expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0)); // Ensure budget chart is up-to-date
+
+            addExpenseBtn.addEventListener('click', handleAddExpense); // Attach event listener to add expense button
+            setBudgetBtn.addEventListener('click', handleSetBudget); // Attach event listener to set budget button
+        };
+
+        // Ensure charts update on window resize
+        window.addEventListener('resize', () => {
+            if (expenseChart) {
+                expenseChart.resize();
+            }
+            if (budgetOverviewChart) {
+                budgetOverviewChart.resize();
+            }
+        });
+    </script>
+</body>
+</html>
